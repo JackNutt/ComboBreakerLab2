@@ -1,0 +1,57 @@
+import RPi.GPIO as GPIO
+import time
+
+# Stepper Motor Configuration
+STEP_PIN = 5
+DIR_PIN = 2
+EN_PIN = 8
+STEPS_PER_NUMBER = 20  # Each number = 20 steps
+FULL_ROTATION = 800  # 40 numbers * 20 steps
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(EN_PIN, GPIO.OUT)
+GPIO.output(EN_PIN, GPIO.LOW)  # Enable motor
+
+# Stepper Motor Movement Function
+def step_motor(direction, steps, delay_us=0.005):
+    GPIO.output(DIR_PIN, direction)
+    for _ in range(steps):
+        GPIO.output(STEP_PIN, GPIO.HIGH)
+        time.sleep(delay_us)
+        GPIO.output(STEP_PIN, GPIO.LOW)
+        time.sleep(delay_us)
+
+# Function to Dial a Combination
+def dial_combination(first, second, third):
+    # Step 1: Turn CW to the first number
+    step_motor(GPIO.HIGH, first * STEPS_PER_NUMBER)
+    time.sleep(0.5)
+
+    # Step 2: Turn CCW past first, then stop at second
+    step_motor(GPIO.LOW, FULL_ROTATION + second * STEPS_PER_NUMBER)
+    time.sleep(0.5)
+
+    # Step 3: Turn CW directly to the third number
+    step_motor(GPIO.HIGH, third * STEPS_PER_NUMBER)
+    time.sleep(0.5)
+
+    # Add a delay to check if the lock opens
+    time.sleep(2)  # Adjust if needed
+
+# Brute-force attack: Iterate through all combinations
+try:
+    for first in range(41):  # 0-40
+        for second in range(41):
+            for third in range(41):
+                print(f"Trying combination: {first}-{second}-{third}")
+                dial_combination(first, second, third)
+
+                # Check if the lock opened (manually or via a sensor)
+                time.sleep(1)  # Adjust delay if needed
+
+# Cleanup on exit
+except KeyboardInterrupt:
+    GPIO.cleanup()
