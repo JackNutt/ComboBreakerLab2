@@ -7,7 +7,7 @@ DIR_PIN = 2
 EN_PIN = 8
 STEPS_PER_NUMBER = 20  # Each number = 20 steps
 FULL_ROTATION = 800  # 40 numbers * 20 steps
-DELAY_US = 0.002  # Reduce delay for speed
+DELAY_US = 0.002  # Reduced delay for faster rotation
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
@@ -36,26 +36,26 @@ def step_motor(direction, steps):
         current_position -= steps
     current_position %= FULL_ROTATION  # Keep within range
 
-# Function to Dial a Combination
+# Function to Dial a Combination (Corrected for Lock Mechanics)
 def dial_combination(first, second, third):
     global current_position
 
-    # Step 1: Turn CW to the first number
-    target = first * STEPS_PER_NUMBER
-    step_motor(GPIO.HIGH, (target - current_position) % FULL_ROTATION)
+    # Step 1: Rotate CW at least 2 full rotations to reset the lock, then stop at the first number
+    print(f"Turning CW 2 full rotations + stopping at {first}")
+    step_motor(GPIO.HIGH, (2 * FULL_ROTATION) + (first * STEPS_PER_NUMBER) - current_position)
     time.sleep(0.5)
 
-    # Step 2: Turn CCW past first, then stop at second
-    target = second * STEPS_PER_NUMBER
-    step_motor(GPIO.LOW, FULL_ROTATION + (target - current_position) % FULL_ROTATION)
+    # Step 2: Rotate CCW 1 full rotation past the first number, then stop at the second number
+    print(f"Turning CCW past {first}, stopping at {second}")
+    step_motor(GPIO.LOW, FULL_ROTATION + ((second * STEPS_PER_NUMBER) - current_position) % FULL_ROTATION)
     time.sleep(0.5)
 
-    # Step 3: Turn CW directly to the third number
-    target = third * STEPS_PER_NUMBER
-    step_motor(GPIO.HIGH, (target - current_position) % FULL_ROTATION)
+    # Step 3: Rotate CW directly to the third number
+    print(f"Turning CW directly to {third}")
+    step_motor(GPIO.HIGH, (third * STEPS_PER_NUMBER) - current_position)
     time.sleep(0.5)
 
-    # Add a delay to check if the lock opens
+    # Delay to simulate unlocking process
     time.sleep(1)
 
 # Brute-force attack: Iterate through all combinations
