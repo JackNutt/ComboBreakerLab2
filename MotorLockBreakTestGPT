@@ -7,6 +7,7 @@ DIR_PIN = 2
 EN_PIN = 8
 STEPS_PER_NUMBER = 20  # Each number = 20 steps
 FULL_ROTATION = 800  # 40 numbers * 20 steps
+DELAY_US = 0.002  # Reduce delay for speed
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
@@ -15,31 +16,47 @@ GPIO.setup(DIR_PIN, GPIO.OUT)
 GPIO.setup(EN_PIN, GPIO.OUT)
 GPIO.output(EN_PIN, GPIO.LOW)  # Enable motor
 
+current_position = 0  # Track dial position
+
 # Stepper Motor Movement Function
-def step_motor(direction, steps, delay_us=0.005):
+def step_motor(direction, steps):
+    global current_position
     GPIO.output(DIR_PIN, direction)
+    
     for _ in range(steps):
         GPIO.output(STEP_PIN, GPIO.HIGH)
-        time.sleep(delay_us)
+        time.sleep(DELAY_US)
         GPIO.output(STEP_PIN, GPIO.LOW)
-        time.sleep(delay_us)
+        time.sleep(DELAY_US)
+
+    # Update position
+    if direction == GPIO.HIGH:
+        current_position += steps
+    else:
+        current_position -= steps
+    current_position %= FULL_ROTATION  # Keep within range
 
 # Function to Dial a Combination
 def dial_combination(first, second, third):
+    global current_position
+
     # Step 1: Turn CW to the first number
-    step_motor(GPIO.HIGH, first * STEPS_PER_NUMBER)
+    target = first * STEPS_PER_NUMBER
+    step_motor(GPIO.HIGH, (target - current_position) % FULL_ROTATION)
     time.sleep(0.5)
 
     # Step 2: Turn CCW past first, then stop at second
-    step_motor(GPIO.LOW, FULL_ROTATION + second * STEPS_PER_NUMBER)
+    target = second * STEPS_PER_NUMBER
+    step_motor(GPIO.LOW, FULL_ROTATION + (target - current_position) % FULL_ROTATION)
     time.sleep(0.5)
 
     # Step 3: Turn CW directly to the third number
-    step_motor(GPIO.HIGH, third * STEPS_PER_NUMBER)
+    target = third * STEPS_PER_NUMBER
+    step_motor(GPIO.HIGH, (target - current_position) % FULL_ROTATION)
     time.sleep(0.5)
 
     # Add a delay to check if the lock opens
-    time.sleep(2)  # Adjust if needed
+    time.sleep(1)
 
 # Brute-force attack: Iterate through all combinations
 try:
@@ -50,8 +67,9 @@ try:
                 dial_combination(first, second, third)
 
                 # Check if the lock opened (manually or via a sensor)
-                time.sleep(1)  # Adjust delay if needed
+                time.sleep(0.5)  # Adjust delay if needed
 
-# Cleanup on exit
 except KeyboardInterrupt:
+    print("Interrupted. Cleaning up GPIO...")
+finally:
     GPIO.cleanup()
