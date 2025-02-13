@@ -41,6 +41,10 @@ try:
 except KeyboardInterrupt:
 
 
+--------------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 import RPi.GPIO as GPIO
 import time
@@ -73,7 +77,7 @@ GPIO.cleanup()
     GPIO.cleanup()
 
 
-
+----------------------------------------------------------------------------------------------------------------
 
 import RPi.GPIO as GPIO
 import time
@@ -117,6 +121,32 @@ try:
         time.sleep(2)
 
 except KeyboardInterrupt:
+
+--------------------------------------------------------------------------------------
+
+
+import RPi.GPIO as GPIO
+import time
+
+GPIO.setmode(GPIO.BCM)
+servo_pin = 18
+GPIO.setup(servo_pin, GPIO.OUT)
+pwm = GPIO.PWM(servo_pin, 50)
+pwm.start(0)
+
+try:
+    while True:
+        duty = float(input("Enter duty cycle (4 to 11, or 'exit' to stop): "))
+        if duty == "exit":
+            break
+        pwm.ChangeDutyCycle(duty)
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    print("Stopping")
+
+pwm.stop()
+GPIO.cleanup()
     print("Stopping")
     pwm.stop()
     GPIO.cleanup()
