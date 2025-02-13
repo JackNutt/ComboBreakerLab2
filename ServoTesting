@@ -211,3 +211,61 @@ except KeyboardInterrupt:
     print("Stopping")
     pwm.stop()
     GPIO.cleanup()
+
+
+---------------------------------------------------------------------------
+
+
+import RPi.GPIO as GPIO
+import time
+
+# Set up GPIO
+GPIO.setmode(GPIO.BCM)
+servo_pin = 18
+GPIO.setup(servo_pin, GPIO.OUT)
+
+# Start PWM at 50Hz (20ms period)
+pwm = GPIO.PWM(servo_pin, 50)
+pwm.start(0)
+
+def set_servo_angle(angle, step=1.0):
+    """
+    Move the servo to a specific angle smoothly.
+    """
+    min_duty = 5   # 0° (fully left)
+    max_duty = 10  # 180° (fully right)
+
+    target_duty = ((angle) / 180) * (max_duty - min_duty) + min_duty
+    current_duty = min_duty  # Start from minimum
+
+    # Gradual movement for smooth transition
+    while abs(current_duty - target_duty) > step:
+        current_duty += step if current_duty < target_duty else -step
+        pwm.ChangeDutyCycle(current_duty)
+        time.sleep(0.05)  # Smoother movement
+
+    pwm.ChangeDutyCycle(target_duty)
+    time.sleep(0.5)  # Hold position
+
+try:
+    print("Initializing Servo to Middle (90°)...")
+    set_servo_angle(90)  # Middle position
+    time.sleep(2)
+
+    while True:
+        print("Moving to 0° (Left)")
+        set_servo_angle(0)
+        time.sleep(2)
+
+        print("Moving to 90° (Center)")
+        set_servo_angle(90)
+        time.sleep(2)
+
+        print("Moving to 180° (Right)")
+        set_servo_angle(180)
+        time.sleep(2)
+
+except KeyboardInterrupt:
+    print("Stopping")
+    pwm.stop()
+    GPIO.cleanup()
