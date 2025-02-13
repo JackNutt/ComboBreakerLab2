@@ -39,6 +39,35 @@ try:
         time.sleep(1)
 
 except KeyboardInterrupt:
+
+
+
+import RPi.GPIO as GPIO
+import time
+
+# Set up GPIO
+GPIO.setmode(GPIO.BCM)
+servo_pin = 18
+GPIO.setup(servo_pin, GPIO.OUT)
+
+# Start PWM at 50Hz (20ms period)
+pwm = GPIO.PWM(servo_pin, 50)
+pwm.start(0)  # Start at 0% duty cycle
+
+try:
+    while True:
+        duty = float(input("Enter duty cycle (2 to 12, or type 'exit' to stop): "))
+        if duty == "exit":
+            break
+        pwm.ChangeDutyCycle(duty)
+        time.sleep(1)  # Give servo time to move
+
+except KeyboardInterrupt:
+    print("Stopping")
+
+pwm.stop()
+GPIO.cleanup()
+
     print("Stopping")
     pwm.stop()
     GPIO.cleanup()
