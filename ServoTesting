@@ -71,3 +71,52 @@ GPIO.cleanup()
     print("Stopping")
     pwm.stop()
     GPIO.cleanup()
+
+
+
+
+import RPi.GPIO as GPIO
+import time
+
+# Set up GPIO
+GPIO.setmode(GPIO.BCM)
+servo_pin = 18
+GPIO.setup(servo_pin, GPIO.OUT)
+
+# Start PWM at 50Hz (20ms period)
+pwm = GPIO.PWM(servo_pin, 50)
+pwm.start(0)  # Start at 0% duty cycle
+
+def set_servo_angle(angle):
+    """
+    Move the servo to a specific angle.
+    Adjusted for Batan D125F with a working PWM range of 5% - 10%.
+    """
+    min_duty = 5   # Minimum working duty cycle
+    max_duty = 10  # Maximum working duty cycle
+    duty_cycle = (angle / 180) * (max_duty - min_duty) + min_duty
+    pwm.ChangeDutyCycle(duty_cycle)
+    time.sleep(1)  # Increased delay for stability
+
+try:
+    print("Initializing Servo to 90° for stability...")
+    set_servo_angle(90)  # Start at a middle position
+    time.sleep(2)
+
+    while True:
+        print("Moving to 0°")
+        set_servo_angle(0)
+        time.sleep(2)
+
+        print("Moving to 90°")
+        set_servo_angle(90)
+        time.sleep(2)
+
+        print("Moving to 180°")
+        set_servo_angle(180)
+        time.sleep(2)
+
+except KeyboardInterrupt:
+    print("Stopping")
+    pwm.stop()
+    GPIO.cleanup()
