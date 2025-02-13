@@ -1,0 +1,47 @@
+import RPi.GPIO as GPIO
+import time
+
+# Set up the GPIO mode
+GPIO.setmode(GPIO.BCM)  # Use Broadcom pin numbering
+servo_pin = 18          # Choose a PWM-capable pin (GPIO18)
+
+# Set up the servo pin as output
+GPIO.setup(servo_pin, GPIO.OUT)
+
+# Start PWM with 50Hz frequency (standard for servos)
+pwm = GPIO.PWM(servo_pin, 50)  # 50Hz = 20ms period
+pwm.start(0)  # Start with 0% duty cycle
+
+def set_servo_angle(angle):
+    """
+    Move the servo to a specific angle.
+    Angle must be between 0 and 180 degrees.
+    """
+    if 0 <= angle <= 180:
+        duty_cycle = (angle / 18) + 2  # Convert angle to duty cycle
+        pwm.ChangeDutyCycle(duty_cycle)
+        time.sleep(0.5)  # Give servo time to reach position
+    else:
+        print("Angle out of range (0-180)")
+
+try:
+    while True:
+        # Move Servo to 0 degrees
+        print("Moving to 0°")
+        set_servo_angle(0)
+        time.sleep(1)
+
+        # Move Servo to 90 degrees
+        print("Moving to 90°")
+        set_servo_angle(90)
+        time.sleep(1)
+
+        # Move Servo to 180 degrees
+        print("Moving to 180°")
+        set_servo_angle(180)
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    print("Stopping")
+    pwm.stop()
+    GPIO.cleanup()  # Reset GPIO settings
