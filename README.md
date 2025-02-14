@@ -4,7 +4,7 @@ Project Description
 This project utilizes a Raspberry Pi, OpenCV, and Python to systematically attempt to crack a 0-40 rotary combination lock. Given that there are over 64,000 possible combinations, the system automates the process of testing each combination efficiently.
 
 ## Files Overview
-Basic_Servo_Movement.py
+### Basic_Servo_Movement.py
 Description: Moves a servo through preset positions (0° → 90° → 180° → 0°).
 Purpose: Determines the duty cycles and PWM frequency for the servo motor, specifically the Batan D125F.
 
