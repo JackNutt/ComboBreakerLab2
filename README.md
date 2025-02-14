@@ -18,7 +18,7 @@ Purpose: Demonstrates the speed and precision of the stepper motor.
 
 ## Setup & Requirements
 ### Hardware:
-Raspberry Pi 5
+* Raspberry Pi 5
 Batan D125F Servo Motor
 NEMA 17 Stepper Motor
 Rotary Combination Lock
