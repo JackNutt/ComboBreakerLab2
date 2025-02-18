@@ -35,6 +35,7 @@
 | **Data In (Pi → MCP3008 Command)** | DIN (Pin 11)                     | GPIO 10 (SPI0_MOSI)            |
 | **Data Out (MCP3008 → Pi)**        | DOUT (Pin 12)                    | GPIO 9 (SPI0_MISO)             |
 
-![MCP3008 Pinout]([https://your-image-url.com/image.png](https://www.google.com/imgres?q=mcp3008%20pinout&imgurl=https%3A%2F%2Ftigoe.github.io%2FPiRecipes%2Fadc-mcp-3xxx%2Fmcp-3xxx-pin-diagram.png&imgrefurl=https%3A%2F%2Ftigoe.github.io%2FPiRecipes%2Fadc-mcp-3xxx%2F&docid=27_Md3roPu5SzM&tbnid=82RNSlz7xE4nmM&vet=12ahUKEwilnfvw582LAxVgl-4BHdsTO04QM3oECBUQAA..i&w=486&h=396&hcb=2&ved=2ahUKEwilnfvw582LAxVgl-4BHdsTO04QM3oECBUQAA))
+![MCP3008 Pinout](https://raw.githubusercontent.com/your-repo/image.png)
+
 
 
