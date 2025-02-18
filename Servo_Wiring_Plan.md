@@ -35,7 +35,7 @@
 | **Data In (Pi → MCP3008 Command)** | DIN (Pin 11)                     | GPIO 10 (SPI0_MOSI)            |
 | **Data Out (MCP3008 → Pi)**        | DOUT (Pin 12)                    | GPIO 9 (SPI0_MISO)             |
 
-![MCP3008 Pinout](https://raw.githubusercontent.com/your-repo/image.png)
+![MCP3008 Pinout](https://github.com/user-attachments/assets/3cb0b953-d1b9-45e8-84b5-5688b06d36b3)
 
 
 
