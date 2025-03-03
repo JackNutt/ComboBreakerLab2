@@ -2,12 +2,12 @@ import RPi.GPIO as GPIO
 import time
 
 # Stepper Motor Configuration
-STEP_PIN = 5
-DIR_PIN = 2
-EN_PIN = 8
+STEP_PIN = 17
+DIR_PIN = 27
+EN_PIN = 22
 STEPS_PER_NUMBER = 20  # Each number = 20 steps
 FULL_ROTATION = 800  # 40 numbers * 20 steps
-DELAY_US = 0.002  # Reduced delay for faster rotation
+DELAY_US = 0.0005  # Reduced delay for faster rotation
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
@@ -44,22 +44,27 @@ def dial_combination(first, second, third):
     steps_to_first = (2 * FULL_ROTATION) + (first * STEPS_PER_NUMBER) - current_position
     print(f"Turning CW 2 full rotations + stopping at {first}")
     step_motor(GPIO.HIGH, steps_to_first)
-    time.sleep(0.5)
+    time.sleep(1)
 
     # Step 2: Rotate CCW 1 full rotation past the first number, then stop at the second number
-    steps_to_second = FULL_ROTATION + ((second * STEPS_PER_NUMBER) - current_position) % FULL_ROTATION
+    steps_to_second = ((FULL_ROTATION + (current_position - second * STEPS_PER_NUMBER)) % FULL_ROTATION) + FULL_ROTATION
+    if steps_to_second < STEPS_PER_NUMBER:
+        print("Fuckkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        steps_to_second += FULL_ROTATION
     print(f"Turning CCW past {first}, stopping at {second}")
     step_motor(GPIO.LOW, steps_to_second)
-    time.sleep(0.5)
+    time.sleep(1)
 
     # Step 3: Rotate CW directly to the third number
-    steps_to_third = (third * STEPS_PER_NUMBER) - current_position
+    steps_to_third = ((third * STEPS_PER_NUMBER) - current_position) % FULL_ROTATION
+    if steps_to_third < 0:
+        steps_to_third += FULL_ROTATION
     print(f"Turning CW directly to {third}")
     step_motor(GPIO.HIGH, steps_to_third)
-    time.sleep(0.5)
+    time.sleep(1)
 
     # Delay to simulate unlocking process
-    time.sleep(1)
+    time.sleep(2)
 
 # Function to Increment Combination in Ascending Order
 def increment_combination(first, second, third):
