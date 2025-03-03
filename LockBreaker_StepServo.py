@@ -28,7 +28,7 @@ spi.max_speed_hz = 1350000
 MOVE_ANGLE = 180  # Angle to Bump Shackle
 HOLD_DURATION = 1.0  # Duration to try to open Shackle
 POSITION_THRESHOLD = 160  # Position where lock is considered "open"
-START_POSITION = 0  # Reset position before each attempt
+START_POSITION = 90  # Reset position before each attempt
 
 # Duty cycles for servo angles
 angle_duty_map = {
@@ -57,7 +57,7 @@ def set_servo_angle(angle):
     """
     target_duty = angle_duty_map.get(angle, 0)  # Default to 0 if angle isn't found
     pwm.ChangeDutyCycle(target_duty)
-    time.sleep(0.5)  # Allow servo to reach position
+    time.sleep(1)  # Allow servo to reach position
     pwm.ChangeDutyCycle(0)  # Stop sending PWM to avoid jitter
 
 def read_mcp3008(channel):
@@ -98,6 +98,8 @@ def try_open_shackle():
     # Check if lock is open
     if current_position > POSITION_THRESHOLD:
         print("Lock is OPEN! Ending Program...")
+        set_servo_angle(START_POSITION)
+        time.sleep(1)
         lock_latch = 1  # Lock is open, stop brute force
         return True
     else:
@@ -157,7 +159,7 @@ def dial_combination(first, second, third):
         steps_to_third += FULL_ROTATION
     print(f"Turning CW directly to {third}")
     step_motor(GPIO.HIGH, steps_to_third)
-    time.sleep(1)
+    time.sleep(0.5)
 
     # Attempt to open the lock
     if try_open_shackle():
