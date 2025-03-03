@@ -20,7 +20,7 @@ spi.max_speed_hz = 1350000
 MOVE_ANGLE = 180  			# Angle to Bump Shackle
 HOLD_DURATION = 1.0  		# Duration to try to open Shackle
 POSITION_THRESHOLD = 160  	# Position Where lock is considered "open"
-START_POSITION = 0  		# Starting position before each attempt
+START_POSITION = 90 		# Starting position before each attempt
 
 # Latch Variable (0 = Lock Closed, 1 = Lock Open)
 lock_latch = 0
@@ -86,12 +86,13 @@ def try_open_shackle():
     # Check if lock is open
     if current_position > POSITION_THRESHOLD:
         print("Lock is OPEN! Ending Program...")
+        set_servo_angle(START_POSITION)
         lock_latch = 1  # Set latch to indicate lock is open
     else:
         print("Lock is STILL CLOSED.")
         # Return to start position
         set_servo_angle(START_POSITION)
-        time.sleep(1)
+        time.sleep(3)
         
         # Verify Return Position
         final_position = get_servo_position()
