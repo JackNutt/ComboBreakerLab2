@@ -2,9 +2,9 @@ import RPi.GPIO as GPIO
 import time
 
 # Rotary encoder GPIO pins
-CLK = 17   # Clockwise rotation
-DT = 27    # Counterclockwise rotation
-SW = 22    # Push-button
+CLK = 23   # Clockwise rotation
+DT = 24    # Counterclockwise rotation
+SW = 25    # Push-button
 
 # Lock combination input (3 digits)
 combination = [0, 0, 0]  
