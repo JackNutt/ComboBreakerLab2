@@ -12,7 +12,6 @@ combination = [0, 0, 0]
 position = 0  # 0 = first digit, 1 = second, 2 = third
 input_active = True  # Flag to control input/blinking state
 
-
 # LCD setup
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
 
@@ -22,15 +21,15 @@ GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-clk_last = GPIO.input(CLK)
-
-last_rotation_time = 0
-ROTATION_DEBOUNCE_MS = 50
+# Variables for rotary encoder state tracking
+encoder_last = (GPIO.input(CLK) << 1) | GPIO.input(DT)
 
 # Initial message
+time.sleep(0.2)  # Let LCD initialize fully
 lcd.clear()
+time.sleep(0.2)
 lcd.write_string("Input Starting")
-time.sleep(0.1)
+time.sleep(0.5)
 
 def draw_combo(blink=False):
     lcd.cursor_pos = (1, 0)
@@ -48,30 +47,28 @@ def draw_combo(blink=False):
     lcd.write_string(lcd_line.ljust(16))  # Pad to clear old chars
 
 def rotary_check():
-    global clk_last, combination, position, last_rotation_time
+    global combination, position, encoder_last
 
     if not input_active:
         return
 
-    clk_current = GPIO.input(CLK)
+    clk = GPIO.input(CLK)
+    dt = GPIO.input(DT)
+    encoder_current = (clk << 1) | dt
 
-    current_time = time.time() * 1000  # current time in ms
+    if encoder_current != encoder_last:
+        cw_transitions = [(0b00, 0b01), (0b01, 0b11), (0b11, 0b10), (0b10, 0b00)]
+        ccw_transitions = [(0b00, 0b10), (0b10, 0b11), (0b11, 0b01), (0b01, 0b00)]
+        transition = (encoder_last, encoder_current)
 
-    if clk_last == 1 and clk_current == 0:
-        if current_time - last_rotation_time < ROTATION_DEBOUNCE_MS:
-            return  # ignore rapid events
-
-        dt_current = GPIO.input(DT)
-
-        if dt_current == 1:
+        if transition in cw_transitions:
             combination[position] = (combination[position] + 1) % 40
-        else:
+            draw_combo(blink=False)
+        elif transition in ccw_transitions:
             combination[position] = (combination[position] - 1) % 40
+            draw_combo(blink=False)
 
-        last_rotation_time = current_time
-        draw_combo(blink=False)
-
-    clk_last = clk_current
+        encoder_last = encoder_current
 
 def button_callback(channel):
     global position, input_active
