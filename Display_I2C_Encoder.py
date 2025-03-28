@@ -9,7 +9,8 @@ SW = 25
 
 # Lock combination input
 combination = [0, 0, 0]
-position = 0  # Current digit: 0, 1, or 2
+position = 0  # 0 = first digit, 1 = second, 2 = third
+input_active = True  # Flag to control input/blinking state
 
 # LCD setup
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
@@ -22,26 +23,30 @@ GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 clk_last = GPIO.input(CLK)
 
-# Show the initial screen
+# Initial message
 lcd.clear()
 lcd.write_string("Input Starting")
 
 def draw_combo(blink=False):
     lcd.cursor_pos = (1, 0)
-
     display = []
+
     for i in range(3):
-        if i == position:
-            # Active digit: always show
+        if not input_active:
+            # Show everything once input is done
+            display.append(f"{combination[i]:02}")
+        elif i == position:
             display.append(f"{combination[i]:02}")
         else:
-            # Inactive digit: blink
             display.append("  " if blink else f"{combination[i]:02}")
 
     lcd.write_string(f"Combo {display[0]}-{display[1]}-{display[2]}")
 
 def rotary_check():
     global clk_last, combination, position
+
+    if not input_active:
+        return  # Don't rotate if input is done
 
     clk_current = GPIO.input(CLK)
 
@@ -54,12 +59,15 @@ def rotary_check():
             combination[position] = (combination[position] - 1) % 40
 
         draw_combo(blink=False)
-        time.sleep(0.05)  # debounce
+        time.sleep(0.05)
 
     clk_last = clk_current
 
 def button_callback(channel):
-    global position
+    global position, input_active
+    if not input_active:
+        return  # Don't allow button presses after final combo
+
     if position < 2:
         position += 1
         draw_combo(blink=False)
@@ -70,15 +78,11 @@ def button_callback(channel):
         lcd.cursor_pos = (1, 0)
         lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
         print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
-        time.sleep(3)
-        position = 0
-        lcd.clear()
-        lcd.write_string("Input Starting")
-        draw_combo(blink=False)
+        input_active = False  # Stop blinking and input
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
-# Start display
+# Start with initial combo line
 draw_combo(blink=False)
 
 # Main loop
@@ -88,8 +92,7 @@ try:
     while True:
         rotary_check()
 
-        # Blink update every 0.5 seconds
-        if time.time() - blink_timer > 0.5:
+        if input_active and (time.time() - blink_timer > 0.5):
             blink_state = not blink_state
             draw_combo(blink=blink_state)
             blink_timer = time.time()
