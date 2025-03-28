@@ -21,11 +21,12 @@ GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Variables for rotary encoder state tracking
-encoder_last = (GPIO.input(CLK) << 1) | GPIO.input(DT)
+# Rotary encoder tracking
+clk_last = GPIO.input(CLK)
+last_rotation_time = time.time()
 
-# Initial message
-time.sleep(0.2)  # Let LCD initialize fully
+# Initial LCD message with buffer time
+time.sleep(0.2)
 lcd.clear()
 time.sleep(0.2)
 lcd.write_string("Input Starting")
@@ -33,8 +34,10 @@ time.sleep(0.5)
 
 def draw_combo(blink=False):
     lcd.cursor_pos = (1, 0)
-    display = []
+    lcd.write_string(" " * 16)  # Clear the line
+    lcd.cursor_pos = (1, 0)
 
+    display = []
     for i in range(3):
         if not input_active:
             display.append(f"{combination[i]:02}")
@@ -44,31 +47,32 @@ def draw_combo(blink=False):
             display.append("  " if blink else f"{combination[i]:02}")
 
     lcd_line = f"Combo {display[0]}-{display[1]}-{display[2]}"
-    lcd.write_string(lcd_line.ljust(16))  # Pad to clear old chars
+    lcd.write_string(lcd_line.ljust(16))
 
 def rotary_check():
-    global combination, position, encoder_last
+    global clk_last, combination, position, last_rotation_time
 
     if not input_active:
         return
 
-    clk = GPIO.input(CLK)
-    dt = GPIO.input(DT)
-    encoder_current = (clk << 1) | dt
+    clk_current = GPIO.input(CLK)
+    dt_current = GPIO.input(DT)
+    now = time.time()
 
-    if encoder_current != encoder_last:
-        cw_transitions = [(0b00, 0b01), (0b01, 0b11), (0b11, 0b10), (0b10, 0b00)]
-        ccw_transitions = [(0b00, 0b10), (0b10, 0b11), (0b11, 0b01), (0b01, 0b00)]
-        transition = (encoder_last, encoder_current)
+    # Detect falling edge of CLK
+    if clk_last == 1 and clk_current == 0:
+        if now - last_rotation_time > 0.05:  # 50 ms debounce
+            if dt_current == 0:
+                # Clockwise = increase
+                combination[position] = (combination[position] + 1) % 40
+            else:
+                # Counter-clockwise = decrease
+                combination[position] = (combination[position] - 1) % 40
 
-        if transition in cw_transitions:
-            combination[position] = (combination[position] + 1) % 40
             draw_combo(blink=False)
-        elif transition in ccw_transitions:
-            combination[position] = (combination[position] - 1) % 40
-            draw_combo(blink=False)
+            last_rotation_time = now
 
-        encoder_last = encoder_current
+    clk_last = clk_current
 
 def button_callback(channel):
     global position, input_active
@@ -93,9 +97,10 @@ def button_callback(channel):
         lcd.write_string(final_code.ljust(16))
         print(f"Final Code Entered: {final_code}")
 
+# Attach button press event
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
-# Start with initial combo line
+# Display initial combination
 draw_combo(blink=False)
 
 # Main loop
@@ -111,7 +116,7 @@ try:
             draw_combo(blink=blink_state)
             blink_timer = time.time()
 
-        time.sleep(0.01)  # small delay to avoid CPU hammering
+        time.sleep(0.01)
 
 except KeyboardInterrupt:
     GPIO.cleanup()
