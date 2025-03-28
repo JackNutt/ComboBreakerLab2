@@ -78,16 +78,14 @@ def button_monitor():
     global position, input_active
 
     while True:
-        # Wait for button press
+        # Wait for press
         while GPIO.input(SW) == GPIO.HIGH:
             time.sleep(0.01)
 
         press_time = time.time()
 
-        # Wait for release OR long press
+        # Wait while button is held
         while GPIO.input(SW) == GPIO.LOW:
-            if time.time() - press_time >= 3:
-                break
             time.sleep(0.01)
 
         duration = time.time() - press_time
@@ -96,7 +94,7 @@ def button_monitor():
             continue
 
         if duration >= 3:
-            # Long press — Go back if possible
+            # Long press – go back if possible
             if position == 2:
                 position = 1
                 draw_combo(blink=False)
@@ -106,9 +104,9 @@ def button_monitor():
                 draw_combo(blink=False)
                 print("Long press: Back to Digit 1")
             else:
-                print("Long press: No action on Digit 1")
+                print("Long press: Already at Digit 1")
         else:
-            # Short press — Advance
+            # Short press – go forward
             if position < 2:
                 position += 1
                 draw_combo(blink=False)
@@ -124,10 +122,14 @@ def button_monitor():
                     lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
                 print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
 
-# Start monitoring button in background
+        # Wait until button is released to avoid retriggering
+        while GPIO.input(SW) == GPIO.LOW:
+            time.sleep(0.01)
+
+# Start button monitor thread
 Thread(target=button_monitor, daemon=True).start()
 
-# Initial combo display
+# Show initial combo
 draw_combo(blink=False)
 
 # Main loop
