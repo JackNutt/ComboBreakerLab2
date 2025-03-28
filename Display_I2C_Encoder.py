@@ -43,26 +43,39 @@ def draw_combo(blink=False):
     lcd_line = f"Combo {display[0]}-{display[1]}-{display[2]}"
     lcd.write_string(lcd_line.ljust(16))  # Pad to clear old chars
 
+ROTARY_STATES = {
+    (0b00, 0b01): +1,
+    (0b01, 0b11): +1,
+    (0b11, 0b10): +1,
+    (0b10, 0b00): +1,
+    (0b00, 0b10): -1,
+    (0b10, 0b11): -1,
+    (0b11, 0b01): -1,
+    (0b01, 0b00): -1,
+}
+
+# Initialize previous encoder state
+prev_state = (GPIO.input(CLK) << 1) | GPIO.input(DT)
+
 def rotary_check():
-    global clk_last, combination, position
+    global prev_state, combination, position
 
     if not input_active:
         return
 
-    clk_current = GPIO.input(CLK)
+    # Read current encoder state
+    clk = GPIO.input(CLK)
+    dt = GPIO.input(DT)
+    curr_state = (clk << 1) | dt
 
-    if clk_last == 1 and clk_current == 0:
-        dt_current = GPIO.input(DT)
+    if prev_state != curr_state:
+        step = ROTARY_STATES.get((prev_state, curr_state), 0)
+        if step != 0:
+            combination[position] = (combination[position] + step) % 40
+            draw_combo(blink=False)
+            time.sleep(0.05)  # debounce delay for stability
 
-        if dt_current == 1:
-            combination[position] = (combination[position] + 1) % 40
-        else:
-            combination[position] = (combination[position] - 1) % 40
-
-        draw_combo(blink=False)
-        time.sleep(0.1)  # debounce and reduce redraw spam
-
-    clk_last = clk_current
+        prev_state = curr_state
 
 def button_callback(channel):
     global position, input_active
