@@ -8,7 +8,7 @@ DIR_PIN = 27
 EN_PIN = 22
 STEPS_PER_NUMBER = 20  # Each number = 20 steps
 FULL_ROTATION = 800  # 40 numbers * 20 steps
-DELAY_US = 0.0005  # Reduced delay for faster rotation
+DELAY_US = 0.0003  # Reduced delay for faster rotation
 
 # Servo Configuration
 SERVO_PIN = 18
@@ -26,7 +26,7 @@ spi.max_speed_hz = 1350000
 
 # Servo Parameters
 MOVE_ANGLE = 180  # Angle to Bump Shackle
-HOLD_DURATION = 1.0  # Duration to try to open Shackle
+HOLD_DURATION = 2.0  # Duration to try to open Shackle
 POSITION_THRESHOLD = 160  # Position where lock is considered "open"
 START_POSITION = 90  # Reset position before each attempt
 
@@ -140,25 +140,25 @@ def dial_combination(first, second, third):
     global current_position
 
     # Step 1: Rotate CW to reset and reach first number
-    steps_to_first = (2 * FULL_ROTATION) + (first * STEPS_PER_NUMBER) - current_position
+    steps_to_first = (3 * FULL_ROTATION) - (first * STEPS_PER_NUMBER) + current_position
     print(f"Turning CW 2 full rotations + stopping at {first}")
-    step_motor(GPIO.HIGH, steps_to_first)
+    step_motor(GPIO.LOW, steps_to_first)
     time.sleep(1)
 
     # Step 2: Rotate CCW past first number, stopping at second number
-    steps_to_second = ((FULL_ROTATION + (current_position - second * STEPS_PER_NUMBER)) % FULL_ROTATION) + FULL_ROTATION
+    steps_to_second = ((FULL_ROTATION - (current_position - second * STEPS_PER_NUMBER)) % FULL_ROTATION) + FULL_ROTATION
     if steps_to_second < STEPS_PER_NUMBER:
         steps_to_second += FULL_ROTATION
     print(f"Turning CCW past {first}, stopping at {second}")
-    step_motor(GPIO.LOW, steps_to_second)
+    step_motor(GPIO.HIGH, steps_to_second)
     time.sleep(1)
 
     # Step 3: Rotate CW directly to the third number
-    steps_to_third = ((third * STEPS_PER_NUMBER) - current_position) % FULL_ROTATION
+    steps_to_third = (current_position - (third * STEPS_PER_NUMBER)) % FULL_ROTATION
     if steps_to_third < 0:
         steps_to_third += FULL_ROTATION
     print(f"Turning CW directly to {third}")
-    step_motor(GPIO.HIGH, steps_to_third)
+    step_motor(GPIO.LOW, steps_to_third)
     time.sleep(0.5)
 
     # Attempt to open the lock
