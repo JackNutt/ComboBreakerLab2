@@ -110,7 +110,7 @@ def button_monitor():
             continue
 
         # Short press triggers only if long press didn't already handle it
-        if total_duration < 3 and not handled:
+        if total_duration < 2 and not handled:
             if position < 2:
                 position += 1
                 draw_combo(blink=False)
