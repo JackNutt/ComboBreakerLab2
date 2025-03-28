@@ -11,7 +11,7 @@ SW = 25
 # Lock combination input
 combination = [0, 0, 0]
 position = 0  # 0 = first digit, 1 = second, 2 = third
-input_active = True  # Flag to control input/blinking state
+input_active = True
 
 # LCD setup
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
@@ -74,60 +74,60 @@ def rotary_check():
 
     clk_last = clk_current
 
-def button_callback(channel):
+def button_monitor():
     global position, input_active
 
-    if not input_active:
-        return
-
-    if position < 2:
-        position += 1
-        draw_combo(blink=False)
-        print(f"Moving to Digit {position + 1}")
-    else:
-        input_active = False
-
-        time.sleep(0.05)
-        with lcd_lock:
-            lcd.clear()
-            time.sleep(0.05)
-            lcd.write_string("Final Code:")
-            lcd.cursor_pos = (1, 0)
-            lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
-        print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
-
-def long_press_monitor():
     while True:
-        # Wait for button to be pressed
+        # Wait for button press
         while GPIO.input(SW) == GPIO.HIGH:
             time.sleep(0.01)
 
         press_time = time.time()
 
-        # Wait while held down
+        # Wait for release OR long press
         while GPIO.input(SW) == GPIO.LOW:
+            if time.time() - press_time >= 3:
+                break
             time.sleep(0.01)
 
         duration = time.time() - press_time
 
-        if duration >= 3 and input_active:
-            global position
+        if not input_active:
+            continue
+
+        if duration >= 3:
+            # Long press — Go back if possible
             if position == 2:
                 position = 1
                 draw_combo(blink=False)
-                print("Long press: Reverted to Digit 2")
+                print("Long press: Back to Digit 2")
             elif position == 1:
                 position = 0
                 draw_combo(blink=False)
-                print("Long press: Reverted to Digit 1")
+                print("Long press: Back to Digit 1")
+            else:
+                print("Long press: No action on Digit 1")
+        else:
+            # Short press — Advance
+            if position < 2:
+                position += 1
+                draw_combo(blink=False)
+                print(f"Short press: Moved to Digit {position + 1}")
+            else:
+                input_active = False
+                time.sleep(0.05)
+                with lcd_lock:
+                    lcd.clear()
+                    time.sleep(0.05)
+                    lcd.write_string("Final Code:")
+                    lcd.cursor_pos = (1, 0)
+                    lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
+                print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
 
-# Attach short press detector
-GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
+# Start monitoring button in background
+Thread(target=button_monitor, daemon=True).start()
 
-# Start background thread for long press detection
-Thread(target=long_press_monitor, daemon=True).start()
-
-# Start with initial combo line
+# Initial combo display
 draw_combo(blink=False)
 
 # Main loop
