@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
 import time
 from RPLCD.i2c import CharLCD
+from threading import Lock
 
 # Rotary encoder GPIO pins
 CLK = 23
@@ -14,6 +15,8 @@ input_active = True  # Flag to control input/blinking state
 
 # LCD setup
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
+lcd_lock = Lock()  # To prevent concurrent LCD access
+last_display = ""  # For buffering last display content
 
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
@@ -24,29 +27,37 @@ GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 clk_last = GPIO.input(CLK)
 
 # Initial message
-lcd.clear()
-lcd.write_string("Input Starting")
+with lcd_lock:
+    lcd.clear()
+    time.sleep(0.05)
+    lcd.write_string("Input Starting")
 
 def draw_combo(blink=False):
-    lcd.cursor_pos = (1, 0)
+    global last_display
     display = []
 
     for i in range(3):
         if not input_active:
-            # Show everything once input is done
             display.append(f"{combination[i]:02}")
         elif i == position:
             display.append(f"{combination[i]:02}")
         else:
             display.append("  " if blink else f"{combination[i]:02}")
 
-    lcd.write_string(f"Combo {display[0]}-{display[1]}-{display[2]}")
+    new_line = f"Combo {display[0]}-{display[1]}-{display[2]}"
+    if new_line != last_display:
+        with lcd_lock:
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(" " * 16)  # Clear line first
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(new_line)
+        last_display = new_line
 
 def rotary_check():
     global clk_last, combination, position
 
     if not input_active:
-        return  # Don't rotate if input is done
+        return
 
     clk_current = GPIO.input(CLK)
 
@@ -65,24 +76,24 @@ def rotary_check():
 
 def button_callback(channel):
     global position, input_active
+
     if not input_active:
-        return  # Don't allow button presses after final combo
+        return
 
     if position < 2:
         position += 1
         draw_combo(blink=False)
         print(f"Moving to Digit {position + 1}")
     else:
-        input_active = False  # Stop blinking and input
+        input_active = False
 
-        # Draw final screen safely
-        time.sleep(0.05)  # short buffer
-        lcd.clear()
-        time.sleep(0.05)  # allow LCD controller to reset
-
-        lcd.write_string("Final Code:")
-        lcd.cursor_pos = (1, 0)
-        lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
+        time.sleep(0.05)
+        with lcd_lock:
+            lcd.clear()
+            time.sleep(0.05)
+            lcd.write_string("Final Code:")
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
         print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
@@ -94,6 +105,7 @@ draw_combo(blink=False)
 try:
     blink_state = False
     blink_timer = time.time()
+
     while True:
         rotary_check()
 
@@ -106,4 +118,5 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup()
-    lcd.clear()
+    with lcd_lock:
+        lcd.clear()
