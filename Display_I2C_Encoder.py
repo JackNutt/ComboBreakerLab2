@@ -1,18 +1,18 @@
-import time
 import RPi.GPIO as GPIO
+import time
 from RPLCD.i2c import CharLCD
 
-# Rotary Encoder Pins
-CLK = 17
-DT = 27
-SW = 22
+# Rotary encoder GPIO pins (updated)
+CLK = 23
+DT = 24
+SW = 25
 
 # Initialize LCD (I2C address: 0x27)
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
 
-# Lock combination
-combination = [0, 0, 0]  
-position = 0  # Tracks current digit being set (0, 1, or 2)
+# Lock combination input
+combination = [0, 0, 0]
+position = 0  # 0 = first digit, 1 = second, 2 = third
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
@@ -22,50 +22,57 @@ GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 clk_last = GPIO.input(CLK)
 
-# Function to update LCD display
 def update_display():
     lcd.clear()
-    lcd.write_string(f"Set Code: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}\n")
-    lcd.write_string(f"Digit: {position+1}")
+    lcd.write_string(f"Code: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}\n")
+    lcd.write_string(f"Digit: {position + 1}")
 
-# Function to handle rotary encoder rotation
-def rotary_callback(channel):
-    global combination, position, clk_last
-    clk_state = GPIO.input(CLK)
-    dt_state = GPIO.input(DT)
+def rotary_check():
+    global clk_last, combination, position
 
-    if clk_state != clk_last:  # Detect rotation
-        if dt_state != clk_state:  # Clockwise rotation
+    clk_current = GPIO.input(CLK)
+
+    # Only process on falling edge
+    if clk_last == 1 and clk_current == 0:
+        dt_current = GPIO.input(DT)
+
+        if dt_current == 1:
             combination[position] = (combination[position] + 1) % 40
-        else:  # Counterclockwise rotation
+        else:
             combination[position] = (combination[position] - 1) % 40
 
-        update_display()  # Update LCD with new value
+        update_display()
+        time.sleep(0.05)  # Small debounce/cooldown
 
-    clk_last = clk_state
+    clk_last = clk_current
 
-# Function to handle button press (move to next digit)
 def button_callback(channel):
     global position
     if position < 2:
-        position += 1  # Move to next number
+        position += 1
+        update_display()
+        print(f"Moving to Digit {position + 1}")
     else:
         lcd.clear()
-        lcd.write_string(f"Final Code:\n{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
-        time.sleep(2)  # Show final code
-        update_display()  # Reset to editing mode
+        lcd.write_string("Final Code:")
+        lcd.cursor_pos = (1, 0)
+        lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
+        print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
+        time.sleep(3)
+        position = 0  # Reset to allow re-entry
+        update_display()
 
-# Attach event detection
-GPIO.add_event_detect(CLK, GPIO.BOTH, callback=rotary_callback, bouncetime=50)
+# Attach button event
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
-# Initial Display
+# Initial display
 update_display()
 
-# Keep script running
+# Main loop
 try:
     while True:
-        time.sleep(0.1)
+        rotary_check()
+        time.sleep(0.001)
 
 except KeyboardInterrupt:
     GPIO.cleanup()
