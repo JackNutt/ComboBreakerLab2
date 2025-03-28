@@ -73,12 +73,17 @@ def button_callback(channel):
         draw_combo(blink=False)
         print(f"Moving to Digit {position + 1}")
     else:
+        input_active = False  # Stop blinking and input
+
+        # Draw final screen safely
+        time.sleep(0.05)  # short buffer
         lcd.clear()
+        time.sleep(0.05)  # allow LCD controller to reset
+
         lcd.write_string("Final Code:")
         lcd.cursor_pos = (1, 0)
         lcd.write_string(f"{combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
         print(f"Final Code Entered: {combination[0]:02}-{combination[1]:02}-{combination[2]:02}")
-        input_active = False  # Stop blinking and input
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
