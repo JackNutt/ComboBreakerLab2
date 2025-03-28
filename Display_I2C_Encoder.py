@@ -12,6 +12,7 @@ combination = [0, 0, 0]
 position = 0  # 0 = first digit, 1 = second, 2 = third
 input_active = True  # Flag to control input/blinking state
 
+
 # LCD setup
 lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2)
 
@@ -22,6 +23,9 @@ GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 clk_last = GPIO.input(CLK)
+
+last_rotation_time = 0
+ROTATION_DEBOUNCE_MS = 50
 
 # Initial message
 lcd.clear()
@@ -44,14 +48,19 @@ def draw_combo(blink=False):
     lcd.write_string(lcd_line.ljust(16))  # Pad to clear old chars
 
 def rotary_check():
-    global clk_last, combination, position
+    global clk_last, combination, position, last_rotation_time
 
     if not input_active:
         return
 
     clk_current = GPIO.input(CLK)
 
+    current_time = time.time() * 1000  # current time in ms
+
     if clk_last == 1 and clk_current == 0:
+        if current_time - last_rotation_time < ROTATION_DEBOUNCE_MS:
+            return  # ignore rapid events
+
         dt_current = GPIO.input(DT)
 
         if dt_current == 1:
@@ -59,8 +68,8 @@ def rotary_check():
         else:
             combination[position] = (combination[position] - 1) % 40
 
+        last_rotation_time = current_time
         draw_combo(blink=False)
-        time.sleep(0.1)  # debounce and reduce redraw spam
 
     clk_last = clk_current
 
