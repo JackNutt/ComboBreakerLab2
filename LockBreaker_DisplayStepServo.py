@@ -240,9 +240,9 @@ def unlock_sequence(first, second, third):
     with lcd_lock:
         lcd.clear()
         lcd.cursor_pos = (0, 0)
-        lcd.write_string("All Combinations ")
+        lcd.write_string("   All Combos   ")
         lcd.cursor_pos = (1, 0)
-        lcd.write_string("FAILED!          ")
+        lcd.write_string("    FAILED!     ")
     time.sleep(3)
     cleanup_and_exit()
 
@@ -279,4 +279,5 @@ try:
             blink_timer = time.time()
         time.sleep(0.001)
 except KeyboardInterrupt:
+    cleanup_and_exit()
     cleanup_and_exit()
