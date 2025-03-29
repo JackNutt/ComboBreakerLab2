@@ -195,24 +195,36 @@ def dial_combination(first, second, third):
 def unlock_sequence(first, second, third):
     global pwm, input_active, position
 
-    success = dial_combination(first, second, third)
-    if success:
-        lcd.clear()
-        lcd.write_string("LOCK OPEN!")
-        time.sleep(3)
-        cleanup_and_exit()
-    else:
-        lcd.clear()
-        lcd.write_string("TRY FAILED")
-        time.sleep(2)
-        lcd.clear()
-        lcd.write_string("Enter New Combo")
+    lcd.clear()
+    lcd.write_string("Running Brute...")
 
-        # Reset for new input
-        combination[0] = combination[1] = combination[2] = 0
-        position = 0
-        input_active = True
-        draw_combo(blink=False)
+    current_combo = (first, second, third)
+
+    while current_combo:
+        f, s, t = current_combo
+        combo_str = f"{f:02}-{s:02}-{t:02}"
+        print(f"Trying combo: {combo_str}")
+
+        with lcd_lock:
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(" " * 16)
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(combo_str)
+
+        if dial_combination(f, s, t):
+            lcd.clear()
+            lcd.write_string("LOCK OPEN!")
+            time.sleep(3)
+            cleanup_and_exit()
+            return
+
+        current_combo = increment_combination(f, s, t)
+
+    lcd.clear()
+    lcd.write_string("All Failed :(")
+    time.sleep(3)
+    cleanup_and_exit()
+
 
 
 
