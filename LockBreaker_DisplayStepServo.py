@@ -67,9 +67,11 @@ def draw_combo(blink=False):
         else:
             display.append("  " if blink else f"{combination[i]:02}")
 
-    new_line = f"Combo {display[0]}-{display[1]}-{display[2]}"
+    new_line = f"Combo: {display[0]}-{display[1]}-{display[2]}"
     if new_line != last_display:
         with lcd_lock:
+            lcd.cursor_pos = (0, 0)
+            lcd.write_string("Input Starting   ")
             lcd.cursor_pos = (1, 0)
             lcd.write_string(" " * 16)
             lcd.cursor_pos = (1, 0)
@@ -207,8 +209,6 @@ def increment_combination(first, second, third):
 def unlock_sequence(first, second, third):
     global pwm, input_active, position
 
-    lcd.clear()
-    lcd.write_string("Running Brute...")
     current_combo = (first, second, third)
 
     while current_combo:
@@ -217,22 +217,32 @@ def unlock_sequence(first, second, third):
         print(f"Trying combo: {combo_str}")
 
         with lcd_lock:
+            lcd.cursor_pos = (0, 0)
+            lcd.write_string("Trying Combo...  ")
             lcd.cursor_pos = (1, 0)
             lcd.write_string(" " * 16)
             lcd.cursor_pos = (1, 0)
             lcd.write_string(combo_str)
 
         if dial_combination(f, s, t):
-            lcd.clear()
-            lcd.write_string("LOCK OPEN!")
+            with lcd_lock:
+                lcd.clear()
+                lcd.cursor_pos = (0, 0)
+                lcd.write_string("Lock OPEN!       ")
+                lcd.cursor_pos = (1, 0)
+                lcd.write_string(combo_str)
             time.sleep(3)
             cleanup_and_exit()
             return
 
         current_combo = increment_combination(f, s, t)
 
-    lcd.clear()
-    lcd.write_string("All Failed :(")
+    with lcd_lock:
+        lcd.clear()
+        lcd.cursor_pos = (0, 0)
+        lcd.write_string("All Combinations ")
+        lcd.cursor_pos = (1, 0)
+        lcd.write_string("FAILED!          ")
     time.sleep(3)
     cleanup_and_exit()
 
@@ -250,7 +260,10 @@ def cleanup_and_exit():
 ### --- START --- ###
 with lcd_lock:
     lcd.clear()
-    lcd.write_string("Input Starting")
+    lcd.cursor_pos = (0, 0)
+    lcd.write_string("Input Starting   ")
+    lcd.cursor_pos = (1, 0)
+    lcd.write_string("Combo: 00-00-00  ")
 
 Thread(target=button_monitor, daemon=True).start()
 draw_combo(blink=False)
