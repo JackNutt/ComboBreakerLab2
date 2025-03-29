@@ -227,12 +227,8 @@ def unlock_sequence(first, second, third):
         if dial_combination(f, s, t):
             with lcd_lock:
                 lcd.clear()
-                lcd.cursor_pos = (0, 0)
-                lcd.write_string("Lock OPEN!       ")
-                lcd.cursor_pos = (1, 0)
-                lcd.write_string(combo_str)
-            time.sleep(3)
-            cleanup_and_exit()
+            cleanup_devices_only()
+            blinking_open_display(combo_str)
             return
 
         current_combo = increment_combination(f, s, t)
@@ -243,10 +239,11 @@ def unlock_sequence(first, second, third):
         lcd.write_string("   All Combos   ")
         lcd.cursor_pos = (1, 0)
         lcd.write_string("    FAILED!     ")
-    time.sleep(3)
-    cleanup_and_exit()
+    cleanup_devices_only()
+    while True:
+        time.sleep(1)  # Hold screen forever
 
-def cleanup_and_exit():
+def cleanup_devices_only():
     try:
         if pwm:
             pwm.stop()
@@ -254,8 +251,18 @@ def cleanup_and_exit():
         print("PWM Stop Error:", e)
     GPIO.cleanup()
     spi.close()
-    lcd.clear()
-    exit(0)
+
+def blinking_open_display(combo_str):
+    show = True
+    while True:
+        with lcd_lock:
+            lcd.clear()
+            lcd.cursor_pos = (0, 0)
+            lcd.write_string("Lock OPEN!       ")
+            lcd.cursor_pos = (1, 0)
+            lcd.write_string(combo_str if show else "                ")
+        show = not show
+        time.sleep(0.8)
 
 ### --- START --- ###
 with lcd_lock:
@@ -279,5 +286,4 @@ try:
             blink_timer = time.time()
         time.sleep(0.001)
 except KeyboardInterrupt:
-    cleanup_and_exit()
-    cleanup_and_exit()
+    cleanup_devices_only()
