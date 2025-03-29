@@ -193,6 +193,8 @@ def dial_combination(first, second, third):
     return try_open_shackle()
 
 def unlock_sequence(first, second, third):
+    global pwm  # Ensure we access the same pwm
+
     success = dial_combination(first, second, third)
     if success:
         lcd.clear()
@@ -204,10 +206,17 @@ def unlock_sequence(first, second, third):
     lcd.clear()
     lcd.write_string("Resetting...")
     time.sleep(2)
+
+    try:
+        if pwm:
+            pwm.stop()
+    except Exception as e:
+        print("PWM Stop Error:", e)
+
     GPIO.cleanup()
-    pwm.stop()
     spi.close()
     exit(0)
+
 
 ### --- START --- ###
 with lcd_lock:
