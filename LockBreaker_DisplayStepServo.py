@@ -193,29 +193,27 @@ def dial_combination(first, second, third):
     return try_open_shackle()
 
 def unlock_sequence(first, second, third):
-    global pwm  # Ensure we access the same pwm
+    global pwm, input_active, position
 
     success = dial_combination(first, second, third)
     if success:
         lcd.clear()
         lcd.write_string("LOCK OPEN!")
+        time.sleep(3)
+        cleanup_and_exit()
     else:
         lcd.clear()
         lcd.write_string("TRY FAILED")
-    time.sleep(3)
-    lcd.clear()
-    lcd.write_string("Resetting...")
-    time.sleep(2)
+        time.sleep(2)
+        lcd.clear()
+        lcd.write_string("Enter New Combo")
 
-    try:
-        if pwm:
-            pwm.stop()
-    except Exception as e:
-        print("PWM Stop Error:", e)
+        # Reset for new input
+        combination[0] = combination[1] = combination[2] = 0
+        position = 0
+        input_active = True
+        draw_combo(blink=False)
 
-    GPIO.cleanup()
-    spi.close()
-    exit(0)
 
 
 ### --- START --- ###
