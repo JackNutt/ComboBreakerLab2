@@ -127,7 +127,7 @@ def button_monitor():
                 print(f"Confirmed: {combination}")
                 time.sleep(1)
                 unlock_sequence(combination[0], combination[1], combination[2])
-                break  # Exit the thread
+                break
 
         while GPIO.input(SW) == GPIO.LOW:
             time.sleep(0.01)
@@ -192,12 +192,23 @@ def dial_combination(first, second, third):
 
     return try_open_shackle()
 
+def increment_combination(first, second, third):
+    third += 1
+    if third > 39:
+        third = 0
+        second += 1
+        if second > 39:
+            second = 0
+            first += 1
+            if first > 39:
+                return None
+    return (first, second, third)
+
 def unlock_sequence(first, second, third):
     global pwm, input_active, position
 
     lcd.clear()
     lcd.write_string("Running Brute...")
-
     current_combo = (first, second, third)
 
     while current_combo:
@@ -225,8 +236,16 @@ def unlock_sequence(first, second, third):
     time.sleep(3)
     cleanup_and_exit()
 
-
-
+def cleanup_and_exit():
+    try:
+        if pwm:
+            pwm.stop()
+    except Exception as e:
+        print("PWM Stop Error:", e)
+    GPIO.cleanup()
+    spi.close()
+    lcd.clear()
+    exit(0)
 
 ### --- START --- ###
 with lcd_lock:
@@ -247,7 +266,4 @@ try:
             blink_timer = time.time()
         time.sleep(0.001)
 except KeyboardInterrupt:
-    pwm.stop()
-    GPIO.cleanup()
-    spi.close()
-    lcd.clear()
+    cleanup_and_exit()
