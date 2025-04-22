@@ -152,7 +152,7 @@ def read_mcp3008(channel):
 def get_servo_position():
     adc_value = read_mcp3008(0)
     position = ((1023 - adc_value)/1023)*180
-    return round(max(0, min(180, scaled)), 1)
+    return round(max(0, min(180, position)), 1)
 
 def try_open_shackle():
     print("Attempting to Open Shackle...")
