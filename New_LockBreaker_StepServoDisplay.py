@@ -22,17 +22,17 @@ SERVO_PIN = 18
 # Stepper Constants
 STEPS_PER_NUMBER = 20
 FULL_ROTATION = 800
-DELAY_US = 0.0001
+DELAY_US = 0.0002
 
 # Servo Constants
 MOVE_ANGLE = 0
-HOLD_DURATION = 1.0
-POSITION_THRESHOLD = 40
+HOLD_DURATION = 0.5
+POSITION_THRESHOLD = 30
 START_POSITION = 90
 lock_latch = 0
 angle_duty_map = {
     0: 2.5,     # Full Left (500 µs)
-    90: 7.5,    # Center (1500 µs)
+    90: 5,    # Center (1500 µs)
     180: 12.5   # Full Right (2500 µs)
 }
 
@@ -159,8 +159,9 @@ def try_open_shackle():
     set_servo_angle(MOVE_ANGLE)
     time.sleep(HOLD_DURATION)
     current_pos = get_servo_position()
+    time.sleep(0.5)
     print("Servo Pos:", current_pos)
-    if current_pos > POSITION_THRESHOLD:
+    if current_pos < POSITION_THRESHOLD:
         print("LOCK OPEN")
         set_servo_angle(START_POSITION)
         return True
